@@ -356,6 +356,78 @@ app.get('/', (req, res) => {
           transform: scale(1.02);
         }
       }
+
+      /* Creative status badge */
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.85rem;
+        background: rgba(20, 20, 35, 0.9);
+        border: 1px solid rgba(0, 255, 136, 0.35);
+        padding: 0.75rem 1.25rem;
+        border-radius: 999px;
+        margin-top: 2rem;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(255,255,255,0.04);
+      }
+      .status-badge .pulse-ring {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 50% 50%, #00ff88 0%, #00d4ff 60%);
+        position: relative;
+        box-shadow: 0 0 12px rgba(0,255,136,0.8);
+      }
+      .status-badge .pulse-ring::before,
+      .status-badge .pulse-ring::after {
+        content: '';
+        position: absolute;
+        inset: -6px;
+        border-radius: 999px;
+        border: 2px solid rgba(0, 255, 136, 0.35);
+        animation: ring 2.2s ease-out infinite;
+      }
+      .status-badge .pulse-ring::after { animation-delay: 1.1s; }
+      @keyframes ring {
+        0% { transform: scale(0.6); opacity: 0.9; }
+        80% { transform: scale(1.6); opacity: 0; }
+        100% { opacity: 0; }
+      }
+      .status-badge .status-text {
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        background: linear-gradient(90deg, #00ff88, #00d4ff, #a855f7);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 0.95rem;
+        white-space: nowrap;
+      }
+      .status-badge .wave {
+        display: inline-flex;
+        align-items: end;
+        gap: 2px;
+        margin-left: 4px;
+      }
+      .status-badge .wave i {
+        display: block;
+        width: 2px;
+        height: 8px;
+        background: linear-gradient(180deg, rgba(0,212,255,0.9), rgba(0,212,255,0.2));
+        border-radius: 2px;
+        animation: eq 1s ease-in-out infinite;
+      }
+      .status-badge .wave i:nth-child(1) { animation-delay: 0s; height: 6px; }
+      .status-badge .wave i:nth-child(2) { animation-delay: 0.1s; height: 10px; }
+      .status-badge .wave i:nth-child(3) { animation-delay: 0.2s; height: 14px; }
+      .status-badge .wave i:nth-child(4) { animation-delay: 0.3s; height: 10px; }
+      .status-badge .wave i:nth-child(5) { animation-delay: 0.4s; height: 6px; }
+      @keyframes eq {
+        0%, 100% { transform: scaleY(0.6); opacity: 0.8; }
+        50% { transform: scaleY(1.4); opacity: 1; }
+      }
       
       .status-dot {
         width: 10px;
@@ -711,9 +783,10 @@ app.get('/', (req, res) => {
           <div class="logo">M</div>
           <h1 class="title">MFM Backend</h1>
           <p class="subtitle">High-performance API server with cutting-edge architecture</p>
-          <div class="status-indicator">
-            <div class="status-dot"></div>
-            Server Online
+          <div class="status-badge" title="Server Online">
+            <div class="pulse-ring"></div>
+            <span class="status-text">Server Online</span>
+            <span class="wave"><i></i><i></i><i></i><i></i><i></i></span>
           </div>
         </div>
         
@@ -997,14 +1070,16 @@ app.get('/', (req, res) => {
       \`;
       document.head.appendChild(style);
       
-      // Status indicator click effect
-      const statusIndicator = document.querySelector('.status-indicator');
-      statusIndicator.addEventListener('click', () => {
-        statusIndicator.style.animation = 'none';
-        setTimeout(() => {
-          statusIndicator.style.animation = 'statusPulse 3s ease-in-out infinite';
-        }, 10);
-      });
+      // Status badge click effect
+      const statusBadge = document.querySelector('.status-badge');
+      if (statusBadge) {
+        statusBadge.addEventListener('click', () => {
+          statusBadge.style.transform = 'scale(1.05)';
+          setTimeout(() => {
+            statusBadge.style.transform = '';
+          }, 150);
+        });
+      }
       
       // Initialize particles
       createParticles();
