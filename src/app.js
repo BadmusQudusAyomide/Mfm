@@ -648,40 +648,46 @@ app.get('/', (req, res) => {
       
       /* Responsive Design */
       @media (max-width: 768px) {
+        .container { 
+          padding: 0;
+          align-items: stretch;
+          justify-content: stretch;
+        }
         .main-card {
-          padding: 2.5rem 2rem;
-          margin: 1rem;
-          border-radius: 24px;
+          width: 100%;
+          max-width: none;
+          padding: 1.5rem 1rem;
+          margin: 0;
+          border-radius: 0;
+          box-shadow: none;
         }
         
         .grid {
           grid-template-columns: 1fr;
-          gap: 1.5rem;
+          gap: 1rem;
         }
         
         .title {
-          font-size: 2.5rem;
+          font-size: 2rem;
         }
         
         .logo {
-          width: 80px;
-          height: 80px;
-          font-size: 2rem;
+          width: 64px;
+          height: 64px;
+          font-size: 1.5rem;
         }
       }
       
       @media (max-width: 480px) {
-        .main-card {
-          padding: 2rem 1.5rem;
-        }
+        .main-card { padding: 1rem; }
         
-        .header {
-          margin-bottom: 3rem;
-        }
+        .header { margin-bottom: 2rem; }
         
-        .endpoint-section {
-          padding: 1.5rem;
-        }
+        .endpoint-section { padding: 1rem; }
+        .section-title { font-size: 1.2rem; }
+        .endpoint-item { padding: 0.75rem; }
+        .method { font-size: 0.7rem; }
+        .code { font-size: 0.8rem; }
       }
       
       /* Accessibility */
