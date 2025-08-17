@@ -10,15 +10,70 @@ const signToken = (user) => {
 };
 
 export const register = asyncHandler(async (req, res) => {
-  const { name, email, password, level, department, phone } = req.body;
-  if (!name || !email || !password) {
-    return res.status(400).json({ message: 'name, email and password are required' });
+  const {
+    name,
+    username,
+    email,
+    password,
+    age,
+    level,
+    gender,
+    dob,
+    faculty,
+    college,
+    department,
+    isChurchMember,
+    subjectOfInterest,
+    bestSubject,
+    phone,
+  } = req.body;
+
+  if (!name || !username || !email || !password) {
+    return res.status(400).json({ message: 'name, username, email and password are required' });
   }
 
-  const exists = await User.findOne({ email });
-  if (exists) return res.status(409).json({ message: 'Email already registered' });
+  const emailExists = await User.findOne({ email });
+  if (emailExists) return res.status(409).json({ message: 'Email already registered' });
 
-  const user = await User.create({ name, email, password, level, department, phone });
+  const usernameExists = await User.findOne({ username });
+  if (usernameExists) return res.status(409).json({ message: 'Username already taken' });
+
+  const allowedLevels = ['100','200','300','400','500','600','700'];
+  if (level && !allowedLevels.includes(String(level))) {
+    return res.status(400).json({ message: 'level must be one of 100,200,300,400,500,600,700' });
+  }
+
+  const allowedGenders = ['male','female','other'];
+  if (gender && !allowedGenders.includes(String(gender).toLowerCase())) {
+    return res.status(400).json({ message: 'gender must be male, female, or other' });
+  }
+
+  let dobValue = dob;
+  if (dob && typeof dob === 'string') {
+    const parsed = new Date(dob);
+    if (isNaN(parsed.getTime())) {
+      return res.status(400).json({ message: 'dob must be a valid date (ISO string or yyyy-mm-dd)' });
+    }
+    dobValue = parsed;
+  }
+
+  const user = await User.create({
+    name,
+    username: String(username).toLowerCase(),
+    email,
+    password,
+    age,
+    level: level ? String(level) : undefined,
+    gender: gender ? String(gender).toLowerCase() : undefined,
+    dob: dobValue,
+    faculty,
+    college,
+    department,
+    isChurchMember,
+    subjectOfInterest,
+    bestSubject,
+    phone,
+  });
   const token = signToken(user);
   res.status(201).json({
     token,

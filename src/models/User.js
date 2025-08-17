@@ -4,12 +4,25 @@ import bcrypt from 'bcryptjs';
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
+    username: { type: String, required: true, unique: true, lowercase: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, select: false },
     role: { type: String, enum: ['member', 'exec', 'admin'], default: 'member' },
-    level: { type: String, default: '100' },
+    age: { type: Number, min: 0, max: 150 },
+    level: { type: String, enum: ['100','200','300','400','500','600','700'], default: '100' },
+    gender: { type: String, enum: ['male', 'female', 'other'], default: 'other' },
+    dob: { type: Date },
+    faculty: { type: String, default: '' },
+    college: { type: String, default: '' },
     department: { type: String, default: '' },
+    isChurchMember: { type: Boolean, default: false },
+    subjectOfInterest: { type: String, default: '' },
+    bestSubject: { type: String, default: '' },
     phone: { type: String, default: '' },
+    profileImage: {
+      url: { type: String, default: '' },
+      publicId: { type: String, default: '' },
+    },
   },
   { timestamps: true }
 );
