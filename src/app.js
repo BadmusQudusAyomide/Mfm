@@ -7,7 +7,16 @@ const app = express();
 
 
 // Middlewares
-app.use(cors());
+// Restrict CORS to your admin/client origin via env var
+// Set CLIENT_ORIGIN in your backend .env to something like:
+//   CLIENT_ORIGIN=https://your-admin-host.com
+const allowedOrigin = process.env.CLIENT_ORIGIN || '*';
+app.use(cors({
+  origin: allowedOrigin === '*' ? true : allowedOrigin,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  // credentials: true, // enable only if you use cookies/sessions
+}));
 app.use(express.json());
 app.use(morgan('dev'));
 
