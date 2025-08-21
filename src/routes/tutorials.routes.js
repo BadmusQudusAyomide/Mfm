@@ -8,7 +8,9 @@ import {
   deleteCourse,
   toggleCoursePublish,
   listTutorialsByCourse,
+  listTutorialsBySubject,
   uploadTutorialPDF,
+  uploadTutorialPDFBySubject,
   viewPDF,
   downloadPDF,
   updateTutorial,
@@ -28,6 +30,11 @@ router.patch('/courses/:id/publish', protect, authorize('exec', 'admin'), toggle
 // Tutorials per course
 router.get('/:courseId', listTutorialsByCourse);
 router.post('/:courseId', protect, authorize('exec', 'admin'), pdfUpload.single('pdf'), uploadTutorialPDF);
+
+// Tutorials per subject (new)
+router.get('/subject/:subjectId', listTutorialsBySubject);
+router.post('/subject/:subjectId', protect, authorize('exec', 'admin'), pdfUpload.single('pdf'), uploadTutorialPDFBySubject);
+
 router.put('/file/:id', protect, authorize('exec', 'admin'), updateTutorial);
 router.delete('/file/:id', protect, authorize('admin'), deleteTutorial);
 router.patch('/file/:id/publish', protect, authorize('exec', 'admin'), toggleTutorialPublish);

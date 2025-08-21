@@ -3,6 +3,7 @@ import Subject from '../models/Subject.js';
 import Quiz from '../models/Quiz.js';
 import Question from '../models/Question.js';
 import Attempt from '../models/Attempt.js';
+import mongoose from 'mongoose';
 
 // --- helpers ---
 function shuffle(arr) {
@@ -66,7 +67,12 @@ export const createSubject = asyncHandler(async (req, res) => {
 export const listQuizzes = asyncHandler(async (req, res) => {
   const { subject, active, q, page = 1, limit = 20, sort = '-createdAt' } = req.query;
   const filter = {};
-  if (subject) filter.subject = subject;
+  if (subject) {
+    if (!mongoose.isValidObjectId(subject)) {
+      return res.status(400).json({ message: 'Invalid subject id in query' });
+    }
+    filter.subject = subject;
+  }
   if (typeof active !== 'undefined') filter.isActive = String(active) === 'true';
   if (q) {
     const s = String(q).trim();
@@ -85,7 +91,21 @@ export const listQuizzes = asyncHandler(async (req, res) => {
 export const createQuiz = asyncHandler(async (req, res) => {
   const { title, subject, description, timeLimitSec, shuffleQuestions, shuffleOptions, attemptLimit, sections, tags } = req.body;
   if (!title || !subject) return res.status(400).json({ message: 'title and subject are required' });
-  const quiz = await Quiz.create({ title, subject, description, timeLimitSec, shuffleQuestions, shuffleOptions, attemptLimit, sections, tags, createdBy: req.user?._id });
+  // subject can be an ObjectId or a subject code (e.g., "01", "MTH101")
+  let subjectId = null;
+  if (mongoose.isValidObjectId(subject)) {
+    // ensure subject exists
+    const exists = await Subject.exists({ _id: subject });
+    if (!exists) return res.status(400).json({ message: 'Subject not found' });
+    subjectId = subject;
+  } else {
+    // try resolve by code
+    const subjDoc = await Subject.findOne({ code: String(subject).toUpperCase() });
+    if (!subjDoc) return res.status(400).json({ message: 'Invalid subject: use a valid Subject ID or existing subject code' });
+    subjectId = subjDoc._id;
+  }
+
+  const quiz = await Quiz.create({ title, subject: subjectId, description, timeLimitSec, shuffleQuestions, shuffleOptions, attemptLimit, sections, tags, createdBy: req.user?._id });
   res.status(201).json(quiz);
 });
 

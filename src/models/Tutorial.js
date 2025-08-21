@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 
 const TutorialSchema = new mongoose.Schema(
   {
-    course: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
+    subject: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject' },
+    course: { type: mongoose.Schema.Types.ObjectId, ref: 'Course' },
     title: { type: String, required: true, trim: true },
     description: { type: String, trim: true },
     pdf: {
@@ -18,6 +19,7 @@ const TutorialSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+TutorialSchema.index({ subject: 1, title: 1 });
 TutorialSchema.index({ course: 1, title: 1 });
 
 const Tutorial = mongoose.model('Tutorial', TutorialSchema);

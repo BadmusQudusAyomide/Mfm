@@ -1,5 +1,6 @@
 import { cloudinary } from '../config/cloudinary.js';
 import Course from '../models/Course.js';
+import Subject from '../models/Subject.js';
 import Tutorial from '../models/Tutorial.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
@@ -79,6 +80,26 @@ export const listTutorialsByCourse = asyncHandler(async (req, res) => {
   res.json({ data: tutorials, pagination: { total, page: pageNum, limit: limitNum, pages: Math.ceil(total / limitNum) } });
 });
 
+// New: Tutorials per subject
+export const listTutorialsBySubject = asyncHandler(async (req, res) => {
+  const { subjectId } = req.params;
+  const { q, published, page = 1, limit = 20, sort = '-createdAt' } = req.query;
+  const filter = { subject: subjectId };
+  if (typeof published !== 'undefined') filter.published = String(published) === 'true';
+  if (q) {
+    const s = String(q).trim();
+    filter.$or = [{ title: new RegExp(s, 'i') }, { description: new RegExp(s, 'i') }];
+  }
+  const pageNum = Math.max(1, Number(page) || 1);
+  const limitNum = Math.min(100, Math.max(1, Number(limit) || 20));
+  const skip = (pageNum - 1) * limitNum;
+  const [total, tutorials] = await Promise.all([
+    Tutorial.countDocuments(filter),
+    Tutorial.find(filter).sort(sort).skip(skip).limit(limitNum),
+  ]);
+  res.json({ data: tutorials, pagination: { total, page: pageNum, limit: limitNum, pages: Math.ceil(total / limitNum) } });
+});
+
 export const uploadTutorialPDF = asyncHandler(async (req, res) => {
   const { courseId } = req.params;
   const { title, description } = req.body;
@@ -113,7 +134,62 @@ export const uploadTutorialPDF = asyncHandler(async (req, res) => {
   });
 
   const tutorial = await Tutorial.create({
+    subject: undefined, // legacy path: no subject specified
     course: course._id,
+    title,
+    description,
+    pdf: {
+      url: uploadResult.secure_url,
+      publicId: uploadResult.public_id,
+      bytes,
+      originalName,
+      contentType: 'application/pdf',
+    },
+    uploadedBy: req.user?._id,
+  });
+
+  res.status(201).json(tutorial);
+});
+
+// New: upload by subject
+export const uploadTutorialPDFBySubject = asyncHandler(async (req, res) => {
+  const { subjectId } = req.params;
+  const { title, description } = req.body;
+  if (!req.file) return res.status(400).json({ message: 'PDF file is required' });
+  if (!title) return res.status(400).json({ message: 'title is required' });
+
+  const subject = await Subject.findById(subjectId).populate('course');
+  if (!subject) return res.status(404).json({ message: 'Subject not found' });
+
+  // Upload to Cloudinary as raw file (PDF)
+  const buffer = req.file.buffer;
+  const originalName = req.file.originalname;
+  const bytes = req.file.size;
+
+  // Use course code if available for folder naming
+  const courseCode = subject.course?.code || String(subject.course || 'unknown');
+  const folder = `tutorials/${courseCode}`;
+
+  const uploadResult = await new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        resource_type: 'raw',
+        folder,
+        use_filename: true,
+        unique_filename: true,
+        filename_override: originalName,
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+    stream.end(buffer);
+  });
+
+  const tutorial = await Tutorial.create({
+    subject: subject._id,
+    course: subject.course?._id, // backfill legacy for now
     title,
     description,
     pdf: {
