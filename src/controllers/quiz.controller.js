@@ -64,12 +64,22 @@ export const createSubject = asyncHandler(async (req, res) => {
 
 // --- Quizzes ---
 export const listQuizzes = asyncHandler(async (req, res) => {
-  const { subject, level, active } = req.query;
+  const { subject, active, q, page = 1, limit = 20, sort = '-createdAt' } = req.query;
   const filter = {};
   if (subject) filter.subject = subject;
-  if (typeof active !== 'undefined') filter.isActive = active === 'true';
-  const quizzes = await Quiz.find(filter).populate('subject', 'name code level department').sort({ createdAt: -1 });
-  res.json(quizzes);
+  if (typeof active !== 'undefined') filter.isActive = String(active) === 'true';
+  if (q) {
+    const s = String(q).trim();
+    filter.$or = [{ title: new RegExp(s, 'i') }, { description: new RegExp(s, 'i') }];
+  }
+  const pageNum = Math.max(1, Number(page) || 1);
+  const limitNum = Math.min(100, Math.max(1, Number(limit) || 20));
+  const skip = (pageNum - 1) * limitNum;
+  const [total, quizzes] = await Promise.all([
+    Quiz.countDocuments(filter),
+    Quiz.find(filter).populate('subject', 'name code level department').sort(sort).skip(skip).limit(limitNum),
+  ]);
+  res.json({ data: quizzes, pagination: { total, page: pageNum, limit: limitNum, pages: Math.ceil(total / limitNum) } });
 });
 
 export const createQuiz = asyncHandler(async (req, res) => {
@@ -84,6 +94,24 @@ export const updateQuiz = asyncHandler(async (req, res) => {
   const quiz = await Quiz.findByIdAndUpdate(id, req.body, { new: true });
   if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
   res.json(quiz);
+});
+
+export const toggleQuizActive = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { isActive } = req.body || {};
+  const quiz = await Quiz.findById(id);
+  if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+  quiz.isActive = Boolean(isActive);
+  await quiz.save();
+  res.json({ id: quiz._id, isActive: quiz.isActive });
+});
+
+export const deleteQuiz = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const quiz = await Quiz.findByIdAndDelete(id);
+  if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+  // Optionally, could also delete related questions and attempts (dangerous); keep as-is for safety.
+  res.json({ message: 'Quiz deleted' });
 });
 
 // --- CSV Upload Questions ---

@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, select: false },
     role: { type: String, enum: ['member', 'exec', 'admin'], default: 'member' },
+    active: { type: Boolean, default: true },
     age: { type: Number, min: 0, max: 150 },
     level: { type: String, enum: ['100','200','300','400','500','600','700'], default: '100' },
     gender: { type: String, enum: ['male', 'female', 'other'], default: 'other' },

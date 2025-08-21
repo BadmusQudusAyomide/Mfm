@@ -7,6 +7,7 @@ const CourseSchema = new mongoose.Schema(
     level: { type: String, enum: ['100','200','300','400','500','600','700'], required: true },
     department: { type: String, required: true, trim: true },
     description: { type: String, trim: true },
+    published: { type: Boolean, default: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }

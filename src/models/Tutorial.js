@@ -12,6 +12,7 @@ const TutorialSchema = new mongoose.Schema(
       originalName: { type: String },
       contentType: { type: String, default: 'application/pdf' },
     },
+    published: { type: Boolean, default: true },
     uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }

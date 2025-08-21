@@ -7,6 +7,8 @@ import {
   listQuizzes,
   createQuiz,
   updateQuiz,
+  toggleQuizActive,
+  deleteQuiz,
   uploadQuestionsCSV,
   startQuiz,
   submitAttempt,
@@ -28,6 +30,8 @@ router.post('/subjects', protect, authorize('exec', 'admin'), createSubject);
 router.get('/', listQuizzes);
 router.post('/', protect, authorize('exec', 'admin'), createQuiz);
 router.put('/:id', protect, authorize('exec', 'admin'), updateQuiz);
+router.patch('/:id/active', protect, authorize('exec', 'admin'), toggleQuizActive);
+router.delete('/:id', protect, authorize('admin'), deleteQuiz);
 
 // CSV upload (with dryRun mode via query ?dryRun=true) - field name: 'csv'
 router.post('/:id/questions/csv', protect, authorize('exec', 'admin'), csvUpload.single('csv'), uploadQuestionsCSV);

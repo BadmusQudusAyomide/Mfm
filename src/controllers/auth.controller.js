@@ -26,6 +26,8 @@ export const register = asyncHandler(async (req, res) => {
     subjectOfInterest,
     bestSubject,
     phone,
+    adminCode,
+    execCode,
   } = req.body;
 
   if (!name || !username || !email || !password) {
@@ -57,6 +59,17 @@ export const register = asyncHandler(async (req, res) => {
     dobValue = parsed;
   }
 
+  // Decide role: first ever user becomes admin; otherwise allow codes
+  let roleToSet = 'member';
+  const totalUsers = await User.countDocuments();
+  if (totalUsers === 0) {
+    roleToSet = 'admin';
+  } else if (adminCode && adminCode === (process.env.ADMIN_SIGNUP_CODE || '')) {
+    roleToSet = 'admin';
+  } else if (execCode && execCode === (process.env.EXEC_SIGNUP_CODE || '')) {
+    roleToSet = 'exec';
+  }
+
   const user = await User.create({
     name,
     username: String(username).toLowerCase(),
@@ -73,20 +86,33 @@ export const register = asyncHandler(async (req, res) => {
     subjectOfInterest,
     bestSubject,
     phone,
+    role: roleToSet,
   });
   const token = signToken(user);
   res.status(201).json({
     token,
-    user: { id: user._id, name: user.name, email: user.email, role: user.role },
+    user: { id: user._id, name: user.name, email: user.email, username: user.username, role: user.role },
   });
 });
 
 export const login = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ message: 'email and password are required' });
+  const { identifier, email, username, password } = req.body;
+  const id = (identifier ?? email ?? username ?? '').toString().trim();
+  if (!id || !password) {
+    return res.status(400).json({ message: 'email/username and password are required' });
+  }
 
-  const user = await User.findOne({ email }).select('+password');
+  // Determine whether id looks like an email; otherwise treat as username
+  const looksLikeEmail = /.+@.+\..+/.test(id);
+  const query = looksLikeEmail
+    ? { email: id.toLowerCase() }
+    : { username: id.toLowerCase() };
+
+  const user = await User.findOne(query).select('+password');
   if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+
+  // Disallow login if account is deactivated
+  if (user.active === false) return res.status(403).json({ message: 'Account is deactivated. Contact an admin.' });
 
   const match = await user.comparePassword(password);
   if (!match) return res.status(401).json({ message: 'Invalid credentials' });
@@ -94,11 +120,29 @@ export const login = asyncHandler(async (req, res) => {
   const token = signToken(user);
   res.json({
     token,
-    user: { id: user._id, name: user.name, email: user.email, role: user.role },
+    user: { id: user._id, name: user.name, email: user.email, username: user.username, role: user.role },
   });
 });
 
 export const me = asyncHandler(async (req, res) => {
   // req.user is set by protect middleware
   return res.json({ user: req.user });
+});
+
+export const promoteSelf = asyncHandler(async (req, res) => {
+  const { role, code } = req.body || {};
+  if (!role || !code) return res.status(400).json({ message: 'role and code are required' });
+  if (!['admin', 'exec'].includes(String(role))) return res.status(400).json({ message: 'role must be admin or exec' });
+
+  const isValid =
+    (role === 'admin' && code === (process.env.ADMIN_SIGNUP_CODE || '')) ||
+    (role === 'exec' && code === (process.env.EXEC_SIGNUP_CODE || ''));
+  if (!isValid) return res.status(403).json({ message: 'Invalid code' });
+
+  // Prevent demotion path and unnecessary writes
+  if (req.user.role === role) return res.json({ message: 'No change', user: req.user });
+
+  req.user.role = role;
+  await req.user.save();
+  return res.json({ message: 'Role updated', user: { id: req.user._id, name: req.user.name, email: req.user.email, username: req.user.username, role: req.user.role } });
 });

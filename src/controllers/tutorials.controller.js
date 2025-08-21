@@ -5,12 +5,23 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 
 // Courses
 export const listCourses = asyncHandler(async (req, res) => {
-  const { level, department } = req.query;
+  const { level, department, q, published, page = 1, limit = 20, sort = 'level code' } = req.query;
   const filter = {};
   if (level) filter.level = level;
   if (department) filter.department = department;
-  const courses = await Course.find(filter).sort({ level: 1, code: 1 });
-  res.json(courses);
+  if (typeof published !== 'undefined') filter.published = String(published) === 'true';
+  if (q) {
+    const s = String(q).trim();
+    filter.$or = [{ title: new RegExp(s, 'i') }, { code: new RegExp(s, 'i') }];
+  }
+  const pageNum = Math.max(1, Number(page) || 1);
+  const limitNum = Math.min(100, Math.max(1, Number(limit) || 20));
+  const skip = (pageNum - 1) * limitNum;
+  const [total, courses] = await Promise.all([
+    Course.countDocuments(filter),
+    Course.find(filter).sort(sort).skip(skip).limit(limitNum),
+  ]);
+  res.json({ data: courses, pagination: { total, page: pageNum, limit: limitNum, pages: Math.ceil(total / limitNum) } });
 });
 
 export const createCourse = asyncHandler(async (req, res) => {
@@ -24,11 +35,48 @@ export const createCourse = asyncHandler(async (req, res) => {
   res.status(201).json(course);
 });
 
+export const updateCourse = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const course = await Course.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+  if (!course) return res.status(404).json({ message: 'Course not found' });
+  res.json(course);
+});
+
+export const deleteCourse = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const deleted = await Course.findByIdAndDelete(id);
+  if (!deleted) return res.status(404).json({ message: 'Course not found' });
+  res.json({ message: 'Course deleted' });
+});
+
+export const toggleCoursePublish = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { published } = req.body || {};
+  const course = await Course.findById(id);
+  if (!course) return res.status(404).json({ message: 'Course not found' });
+  course.published = Boolean(published);
+  await course.save();
+  res.json({ id: course._id, published: course.published });
+});
+
 // Tutorials
 export const listTutorialsByCourse = asyncHandler(async (req, res) => {
   const { courseId } = req.params;
-  const tutorials = await Tutorial.find({ course: courseId }).sort({ createdAt: -1 });
-  res.json(tutorials);
+  const { q, published, page = 1, limit = 20, sort = '-createdAt' } = req.query;
+  const filter = { course: courseId };
+  if (typeof published !== 'undefined') filter.published = String(published) === 'true';
+  if (q) {
+    const s = String(q).trim();
+    filter.$or = [{ title: new RegExp(s, 'i') }, { description: new RegExp(s, 'i') }];
+  }
+  const pageNum = Math.max(1, Number(page) || 1);
+  const limitNum = Math.min(100, Math.max(1, Number(limit) || 20));
+  const skip = (pageNum - 1) * limitNum;
+  const [total, tutorials] = await Promise.all([
+    Tutorial.countDocuments(filter),
+    Tutorial.find(filter).sort(sort).skip(skip).limit(limitNum),
+  ]);
+  res.json({ data: tutorials, pagination: { total, page: pageNum, limit: limitNum, pages: Math.ceil(total / limitNum) } });
 });
 
 export const uploadTutorialPDF = asyncHandler(async (req, res) => {
@@ -97,4 +145,31 @@ export const downloadPDF = asyncHandler(async (req, res) => {
   // For raw resources, appending `?fl_attachment` triggers download
   const downloadUrl = `${t.pdf.url}${t.pdf.url.includes('?') ? '&' : '?'}fl_attachment`;
   return res.redirect(downloadUrl);
+});
+
+export const updateTutorial = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const tut = await Tutorial.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+  if (!tut) return res.status(404).json({ message: 'Tutorial not found' });
+  res.json(tut);
+});
+
+export const deleteTutorial = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const tut = await Tutorial.findById(id);
+  if (!tut) return res.status(404).json({ message: 'Tutorial not found' });
+  // Attempt to delete from Cloudinary best-effort
+  try { if (tut.pdf?.publicId) { await cloudinary.uploader.destroy(tut.pdf.publicId, { resource_type: 'raw' }); } } catch (e) {}
+  await tut.deleteOne();
+  res.json({ message: 'Tutorial deleted' });
+});
+
+export const toggleTutorialPublish = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { published } = req.body || {};
+  const tut = await Tutorial.findById(id);
+  if (!tut) return res.status(404).json({ message: 'Tutorial not found' });
+  tut.published = Boolean(published);
+  await tut.save();
+  res.json({ id: tut._id, published: tut.published });
 });
