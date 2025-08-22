@@ -8,6 +8,7 @@ import quizRoutes from './quiz.routes.js';
 import usersRoutes from './users.routes.js';
 import statsRoutes from './stats.routes.js';
 import catalogRoutes from './catalog.routes.js';
+import aiRoutes from './ai.routes.js';
 
 
 
@@ -22,5 +23,6 @@ router.use('/quiz', quizRoutes);
 router.use('/users', usersRoutes);
 router.use('/stats', statsRoutes);
 router.use('/catalog', catalogRoutes);
+router.use('/ai', aiRoutes);
 
 export default router;
