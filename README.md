@@ -1,85 +1,107 @@
-# Church Fellowship Backend (Node.js + Express + MongoDB)
+# Church Fellowship Backend
 
-Learning-focused backend for a church fellowship app suitable for 100-level students.
+A clean, restructured backend for managing church tutorials and educational content.
 
-## Features (MVP)
-- Auth: Register/Login with JWT
-- Profiles: Basic user profile fields
-- Groups: Units/ministries or cell fellowships
-- Events: Basic event CRUD
-- Attendance: (Scaffold placeholder)
-- Announcements: (Scaffold placeholder)
+## New Structure
 
-## Tech Stack
-- Node.js, Express
-- MongoDB with Mongoose
-- JWT Auth
-- CORS, dotenv, morgan
+The system follows this hierarchy:
 
-## Quick Start
-1) Install Node.js (v18+ recommended)
-2) Create a `.env` file from `.env.example`
-3) Install dependencies and start the server
+1. **Tutorials** → Lists hardcoded colleges (SET, CHS, JUPEP)
+2. **College** → Lists courses for that college
+3. **Course** → Lists topics (dynamically from database)
+4. **Topic** → Shows the document (PDF)
 
-### Environment Variables
-Create `./.env` from `./.env.example`:
-```
-PORT=4000
-MONGO_URI=mongodb://127.0.0.1:27017/church_fellowship
-JWT_SECRET=please_change_me
-JWT_EXPIRES_IN=7d
-```
+## API Endpoints
 
-### Scripts
-- `npm run dev` – start in dev mode (nodemon)
-- `npm start` – start in production mode
+### Tutorials
 
-### Install & Run
-```
-npm install
-npm run dev
-```
+- `GET /api/tutorials/colleges` - Get hardcoded colleges
+- `GET /api/tutorials/colleges/:collegeAbbr/courses` - Get courses for a college
+- `GET /api/tutorials/courses/:courseId/topics` - Get topics for a course
+- `GET /api/tutorials/topics/:topicId` - Get a specific topic document
+- `POST /api/tutorials/courses/:courseId/topics` - Upload a new topic document
+- `PUT /api/tutorials/topics/:topicId` - Update a topic document
+- `DELETE /api/tutorials/topics/:topicId` - Delete a topic document
+- `PATCH /api/tutorials/topics/:topicId/publish` - Toggle topic publish status
+- `GET /api/tutorials/topics/:topicId/view` - View PDF document
+- `GET /api/tutorials/topics/:topicId/download` - Download PDF document
 
-Server runs at: `http://localhost:4000`
+### Courses (Admin)
 
-Health check: `GET /health`
+- `GET /api/courses` - Get all courses
+- `POST /api/courses` - Create a new course
+- `PUT /api/courses/:id` - Update a course
+- `DELETE /api/courses/:id` - Delete a course
+- `PATCH /api/courses/:id/publish` - Toggle course publish status
 
-## Project Structure
-```
-church-fellowship-backend/
-  .env.example
-  .gitignore
-  package.json
-  README.md
-  src/
-    app.js
-    server.js
-    config/
-      db.js
-    controllers/
-      auth.controller.js
-    middleware/
-      auth.js
-    models/
-      User.js
-      Group.js
-      Event.js
-    routes/
-      index.js
-      auth.routes.js
-      groups.routes.js
-      events.routes.js
-    utils/
-      asyncHandler.js
-```
+### Authentication
 
-## Learning Steps
-1) Read `src/app.js` and `src/server.js` to understand Express setup.
-2) Open `src/config/db.js` to see Mongo connection.
-3) Explore routes in `src/routes/` and controllers in `src/controllers/`.
-4) Try creating a user with `POST /api/auth/register` and logging in with `POST /api/auth/login`.
-5) Inspect models in `src/models/` to see Mongoose schemas.
+- `POST /api/auth/login` - User login
+- `POST /api/auth/register` - User registration
+- `GET /api/auth/me` - Get current user
 
-## Notes
-- If `MONGO_URI` is missing, the server will still start but DB features will be disabled.
-- This project is intentionally simplified and commented for learning.
+## Models
+
+### College
+
+- Hardcoded colleges: SET, CHS, JUPEP
+- Static method `getHardcodedColleges()` returns the predefined list
+
+### Course
+
+- Belongs to a college
+- Has code, title, level, description
+- Can be published/unpublished
+
+### Tutorial (Topic)
+
+- Belongs to a course
+- Has topic name, title, description
+- Contains PDF document
+- Can be published/unpublished
+
+## Setup
+
+1. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+2. Set up environment variables:
+
+   ```bash
+   cp .env.example .env
+   # Fill in your MongoDB URI and other config
+   ```
+
+3. Seed the hardcoded colleges:
+
+   ```bash
+   node scripts/seedColleges.js
+   ```
+
+4. Start the server:
+   ```bash
+   npm start
+   ```
+
+## Database Schema
+
+The system uses MongoDB with Mongoose. The main collections are:
+
+- `colleges` - Hardcoded college information
+- `courses` - Course information linked to colleges
+- `tutorials` - Topic documents linked to courses
+- `users` - User authentication and management
+
+## Clean Architecture
+
+This backend has been cleaned up to remove:
+
+- Unused models (Subject, Department, Quiz, Event, Group)
+- Unnecessary routes and controllers
+- Complex legacy code
+- Unused features
+
+The focus is now on the core tutorial management system with a clean, hierarchical structure.

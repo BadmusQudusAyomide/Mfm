@@ -1,55 +1,38 @@
-import { Router } from 'express';
-import { protect, authorize } from '../middleware/auth.js';
-import { csvUpload } from '../middleware/csvUpload.js';
+import { Router } from "express";
+import { protect, authorize } from "../middleware/auth.js";
 import {
-  listSubjects,
-  createSubject,
-  listQuizzes,
+  getAllQuizzes,
+  getQuiz,
+  getQuizQuestions,
   createQuiz,
   updateQuiz,
-  toggleQuizActive,
   deleteQuiz,
-  uploadQuestionsCSV,
-  startQuiz,
-  submitAttempt,
-  getAttempt,
-  quizLeaderboard,
-  globalLeaderboard,
-  userLeaderboardDetail,
-  exportAttemptsCSV,
-  removeNegativeMarkingField,
-} from '../controllers/quiz.controller.js';
+  toggleQuizPublish,
+  getQuizQuestionsAdmin,
+  createQuestion,
+  updateQuestion,
+  deleteQuestion,
+  reorderQuestions,
+} from "../controllers/quiz.controller.js";
 
 const router = Router();
 
-// Subjects
-router.get('/subjects', listSubjects);
-router.post('/subjects', protect, authorize('exec', 'admin'), createSubject);
+// Public routes
+router.get("/", getAllQuizzes);
+router.get("/:id", getQuiz);
+router.get("/:id/questions", getQuizQuestions);
 
-// Quizzes (list/create/update)
-router.get('/', listQuizzes);
-router.post('/', protect, authorize('exec', 'admin'), createQuiz);
-router.put('/:id', protect, authorize('exec', 'admin'), updateQuiz);
-router.patch('/:id/active', protect, authorize('exec', 'admin'), toggleQuizActive);
-router.delete('/:id', protect, authorize('admin'), deleteQuiz);
+// Admin routes
+router.post("/", protect, authorize("exec", "admin"), createQuiz);
+router.put("/:id", protect, authorize("exec", "admin"), updateQuiz);
+router.delete("/:id", protect, authorize("admin"), deleteQuiz);
+router.patch("/:id/publish", protect, authorize("exec", "admin"), toggleQuizPublish);
 
-// CSV upload (with dryRun mode via query ?dryRun=true) - field name: 'csv'
-router.post('/:id/questions/csv', protect, authorize('exec', 'admin'), csvUpload.single('csv'), uploadQuestionsCSV);
-
-// Quiz taking
-router.post('/:id/start', protect, startQuiz);
-router.post('/attempts/:attemptId/submit', protect, submitAttempt);
-router.get('/attempts/:attemptId', protect, getAttempt);
-
-// Leaderboards
-router.get('/:id/leaderboard', quizLeaderboard);
-router.get('/leaderboard/global', globalLeaderboard);
-router.get('/leaderboard/user/:userId', userLeaderboardDetail);
-
-// Export attempts
-router.get('/:id/attempts/export', protect, authorize('exec', 'admin'), exportAttemptsCSV);
-
-// Admin maintenance
-router.post('/admin/cleanup/remove-negative-marking', protect, authorize('exec', 'admin'), removeNegativeMarkingField);
+// Question management
+router.get("/:quizId/questions/admin", protect, authorize("exec", "admin"), getQuizQuestionsAdmin);
+router.post("/:quizId/questions", protect, authorize("exec", "admin"), createQuestion);
+router.put("/questions/:id", protect, authorize("exec", "admin"), updateQuestion);
+router.delete("/questions/:id", protect, authorize("admin"), deleteQuestion);
+router.post("/:quizId/questions/reorder", protect, authorize("exec", "admin"), reorderQuestions);
 
 export default router;

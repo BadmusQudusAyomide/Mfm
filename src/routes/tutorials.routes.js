@@ -1,46 +1,74 @@
-import { Router } from 'express';
-import { protect, authorize } from '../middleware/auth.js';
-import pdfUpload from '../middleware/pdfUpload.js';
+import { Router } from "express";
+import { protect, authorize } from "../middleware/auth.js";
+import pdfUpload from "../middleware/pdfUpload.js";
 import {
-  listCourses,
-  createCourse,
-  updateCourse,
-  deleteCourse,
-  toggleCoursePublish,
-  listTutorialsByCourse,
-  listTutorialsBySubject,
-  uploadTutorialPDF,
-  uploadTutorialPDFBySubject,
+  getColleges,
+  getCoursesByCollege,
+  getTopicsByCourse,
+  getTopicDocument,
+  uploadTopicDocument,
+  updateTopicDocument,
+  deleteTopicDocument,
+  toggleTopicPublish,
   viewPDF,
   downloadPDF,
-  updateTutorial,
-  deleteTutorial,
-  toggleTutorialPublish,
-} from '../controllers/tutorials.controller.js';
+  getVideo,
+} from "../controllers/tutorials.controller.js";
 
 const router = Router();
 
-// Courses
-router.get('/courses', listCourses);
-router.post('/courses', protect, authorize('exec', 'admin'), createCourse);
-router.put('/courses/:id', protect, authorize('exec', 'admin'), updateCourse);
-router.delete('/courses/:id', protect, authorize('admin'), deleteCourse);
-router.patch('/courses/:id/publish', protect, authorize('exec', 'admin'), toggleCoursePublish);
+// Get hardcoded colleges (SET, CHS, JUPEP)
+router.get("/colleges", getColleges);
 
-// Tutorials per course
-router.get('/:courseId', listTutorialsByCourse);
-router.post('/:courseId', protect, authorize('exec', 'admin'), pdfUpload.single('pdf'), uploadTutorialPDF);
+// Get courses for a specific college
+router.get("/colleges/:collegeAbbr/courses", getCoursesByCollege);
 
-// Tutorials per subject (new)
-router.get('/subject/:subjectId', listTutorialsBySubject);
-router.post('/subject/:subjectId', protect, authorize('exec', 'admin'), pdfUpload.single('pdf'), uploadTutorialPDFBySubject);
+// Get topics for a specific course
+router.get("/courses/:courseId/topics", getTopicsByCourse);
 
-router.put('/file/:id', protect, authorize('exec', 'admin'), updateTutorial);
-router.delete('/file/:id', protect, authorize('admin'), deleteTutorial);
-router.patch('/file/:id/publish', protect, authorize('exec', 'admin'), toggleTutorialPublish);
+// Get a specific topic document
+router.get("/topics/:topicId", getTopicDocument);
 
-// View / Download single tutorial PDF
-router.get('/file/:id/view', viewPDF);
-router.get('/file/:id/download', downloadPDF);
+// Upload a new topic document (admin only)
+router.post(
+  "/courses/:courseId/topics",
+  protect,
+  authorize("exec", "admin"),
+  pdfUpload.single("file"),
+  uploadTopicDocument
+);
+
+// Update a topic document (admin only)
+router.put(
+  "/topics/:topicId",
+  protect,
+  authorize("exec", "admin"),
+  updateTopicDocument
+);
+
+// Delete a topic document (admin only)
+router.delete(
+  "/topics/:topicId",
+  protect,
+  authorize("admin"),
+  deleteTopicDocument
+);
+
+// Toggle topic publish status (admin only)
+router.patch(
+  "/topics/:topicId/publish",
+  protect,
+  authorize("exec", "admin"),
+  toggleTopicPublish
+);
+
+// View PDF document
+router.get("/topics/:topicId/view", viewPDF);
+
+// Download PDF document
+router.get("/topics/:topicId/download", downloadPDF);
+
+// Get video stream
+router.get("/topics/:topicId/video", getVideo);
 
 export default router;

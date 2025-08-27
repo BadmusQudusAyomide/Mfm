@@ -1,32 +1,74 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const answerSchema = new mongoose.Schema(
+const AttemptSchema = new mongoose.Schema(
   {
-    question: { type: mongoose.Schema.Types.ObjectId, ref: 'Question', required: true },
-    selectedIndex: { type: Number, min: 0, max: 4, required: true },
-    isCorrect: { type: Boolean, default: false },
-    earnedPoints: { type: Number, default: 0 },
+    user: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: "User", 
+      required: true 
+    },
+    quiz: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: "Quiz", 
+      required: true 
+    },
+    answers: [{
+      question: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: "Question",
+        required: true
+      },
+      selectedIndex: { 
+        type: Number, 
+        required: true 
+      },
+      isCorrect: { 
+        type: Boolean, 
+        default: false 
+      },
+      points: { 
+        type: Number, 
+        default: 0 
+      }
+    }],
+    score: { 
+      type: Number, 
+      default: 0 
+    },
+    maxScore: { 
+      type: Number, 
+      required: true 
+    },
+    startedAt: { 
+      type: Date, 
+      default: Date.now 
+    },
+    submittedAt: { 
+      type: Date 
+    },
+    timeSpent: { 
+      type: Number, 
+      default: 0 
+    },
+    isPassed: { 
+      type: Boolean, 
+      default: false 
+    },
+    questionOrder: [{ 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: "Question" 
+    }]
   },
-  { _id: false }
+  { 
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+  }
 );
 
-const attemptSchema = new mongoose.Schema(
-  {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    quiz: { type: mongoose.Schema.Types.ObjectId, ref: 'Quiz', required: true },
-    score: { type: Number, default: 0 },
-    maxScore: { type: Number, default: 0 },
-    startedAt: { type: Date, default: Date.now },
-    submittedAt: { type: Date },
-    durationSec: { type: Number, default: 0 },
-    questionOrder: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }],
-    answers: [answerSchema],
-    questionCount: { type: Number, default: 0 },
-  },
-  { timestamps: true }
-);
+// Indexes
+AttemptSchema.index({ user: 1, quiz: 1 });
+AttemptSchema.index({ submittedAt: -1 });
 
-attemptSchema.index({ user: 1, quiz: 1, createdAt: -1 });
-
-const Attempt = mongoose.model('Attempt', attemptSchema);
+const Attempt = mongoose.model("Attempt", AttemptSchema);
 export default Attempt;

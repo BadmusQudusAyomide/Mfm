@@ -1,28 +1,26 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const questionSchema = new mongoose.Schema(
+const QuestionSchema = new mongoose.Schema(
   {
-    quiz: { type: mongoose.Schema.Types.ObjectId, ref: 'Quiz', required: true },
-    section: { type: String, default: '' },
-    difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
-    tags: [{ type: String }],
-    text: { type: String, required: true },
-    options: {
-      type: [String],
-      validate: {
-        validator: (arr) => Array.isArray(arr) && arr.length >= 2 && arr.length <= 5,
-        message: 'Options must have between 2 and 5 choices',
-      },
-      required: true,
+    quiz: { type: mongoose.Schema.Types.ObjectId, ref: "Quiz", required: true },
+    question: { type: String, required: true, trim: true },
+    type: {
+      type: String,
+      enum: ["multiple_choice", "true_false", "short_answer"],
+      default: "multiple_choice",
     },
-    correctIndex: { type: Number, min: 0, max: 4, required: true },
-    explanation: { type: String, default: '' },
+    options: [String], // for multiple choice questions
+    correctAnswer: { type: String, required: true },
+    explanation: { type: String, trim: true },
     points: { type: Number, default: 1 },
+    order: { type: Number, default: 0 },
+    published: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
 
-questionSchema.index({ quiz: 1 });
+QuestionSchema.index({ quiz: 1, order: 1 });
+QuestionSchema.index({ published: 1 });
 
-const Question = mongoose.model('Question', questionSchema);
+const Question = mongoose.model("Question", QuestionSchema);
 export default Question;
